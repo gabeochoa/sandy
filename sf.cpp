@@ -17,6 +17,8 @@ inline int rgb(uchar r, uchar g, uchar b, uchar a = 255) {
     return (r << 24) | (g << 16) | (b << 8) | (a);
 }
 
+// #define SHOW_FPS
+
 #if 1
 const uint window_width = 1920;
 const uint window_height = 1080;
@@ -68,6 +70,7 @@ struct Tile {
 };
 
 Material selectedMaterial = Water;
+std::array<Tile, height * width> grid;
 
 int getColorForMat(Material mat) {
     switch (mat) {
@@ -93,10 +96,9 @@ int getColorForMat(Material mat) {
     return 0;
 }
 
-std::array<Tile, height * width> grid;
 inline int xy(int x, int y) { return y * width + x; }
 inline bool empty(int x, int y) { return grid[xy(x, y)].material == Empty; }
-bool inbounds(int x, int y) {
+inline bool inbounds(int x, int y) {
     return !(x < 0 || y < 0 || x > width - 1 || y > height - 1);
 }
 
@@ -262,7 +264,7 @@ void update_for_material(Material material, int x, int y) {
             break;
         case Water: {
             bool fell = fall_if_can(x, y);
-            if (fell) return;
+            // if (fell) return;
             spread_if_can(x, y);
         } break;
         case Sand: {
@@ -444,12 +446,14 @@ int main() {
         // end the current frame
         window.display();
 
+#ifdef SHOW_FPS
         frame++;
         if (counting > 1000) {
             counting = 0;
             std::cout << "fps: " << frame << std::endl;
             frame = 0;
         }
+#endif
     }
 
     return 0;
