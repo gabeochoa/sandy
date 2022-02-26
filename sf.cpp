@@ -1,30 +1,37 @@
 #include <SFML/Graphics.hpp>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <iostream>
 #include <thread>
 
-const unsigned int window_width = 1920;
-const unsigned int window_height = 1080;
-// const unsigned int window_width = 3840;
-// const unsigned int window_height = 2160;
-
-const unsigned int scale = 10;
+typedef unsigned int uint;
+typedef unsigned char uchar;
 
 constexpr int int_ceil(float f) {
     const int i = static_cast<int>(f);
     return f > i ? i + 1 : i;
 }
 
-constexpr int width = int_ceil(1.f * window_width / scale) + 1;
-constexpr int height = int_ceil(1.f * window_height / scale) + 1;
-// run the program as long as the window is open
-int frame = 0;
-
-inline int rgb(unsigned char r, unsigned char g, unsigned char b,
-               unsigned char a = 255) {
+inline int rgb(uchar r, uchar g, uchar b, uchar a = 255) {
     return (r << 24) | (g << 16) | (b << 8) | (a);
 }
+
+#if 1
+const uint window_width = 1920;
+const uint window_height = 1080;
+#else
+const unsigned int window_width = 3840;
+const unsigned int window_height = 2160;
+#endif
+
+const uint scale = 10;
+
+constexpr int width = int_ceil(1.f * window_width / scale) + 1;
+constexpr int height = int_ceil(1.f * window_height / scale) + 1;
+
+// run the program as long as the window is open
+int frame = 0;
 
 enum Material {
     Empty = 0,
@@ -71,7 +78,6 @@ int getColorForMat(Material mat) {
     return 0;
 }
 
-#include <array>
 std::array<Tile, height * width> grid;
 inline int xy(int x, int y) { return y * width + x; }
 inline bool empty(int x, int y) { return grid[xy(x, y)].material == Empty; }
@@ -123,7 +129,7 @@ inline bool sink(int x, int y, Material m) {
 
 inline void clear(int x, int y) { grid[xy(x, y)] = Tile(); }
 
-const int LIFESPAN = 3000;
+const int LIFESPAN = 1000;
 void _place(int x, int y, Material m) {
     if (!inbounds(x, y)) return;
     Tile &t = grid[xy(x, y)];
@@ -211,42 +217,6 @@ void spread_if_can(int x, int y) {
     t.updated = true;
 }
 
-void update_water(int x, int y) {
-    bool fell = fall_if_can(x, y);
-    if (fell) return;
-    // didnt fall and im surrounded
-    spread_if_can(x, y);
-    return;
-}
-void update_sand(int x, int y) {
-    sink_if_can(x, y, Sand);
-    fall_if_can(x, y);
-}
-
-void update_smoke(int x, int y) {
-    sink_if_can(x, y, Smoke, -1);
-    fall_if_can(x, y, -1);
-    spread_if_can(x, y);
-}
-
-void update_fire(int x, int y) {
-    int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-    int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
-
-    if (empty(x, y - 1)) {
-        place(x, y - 1, Smoke);
-    }
-
-    Tile &t = grid[xy(x, y)];
-
-    for (int i = 0; i < 8; i++) {
-        int xp = x + dx[i];
-        int yp = y + dy[i];
-        if (!is_flammable(xp, yp)) continue;
-        place(xp, yp, Fire);
-    }
-}
-
 void drawColorForTile(unsigned char *pic, int i, int j, Tile &t) {
     int color = getColorForMat(t.material);
     pic[xy(i, j) * 4] = (color & 0xFF000000) >> 24;
@@ -262,44 +232,64 @@ void update_for_material(Material material, int x, int y) {
         case Empty:
         case Ground:
             break;
-        case Water:
-            update_water(x, y);
-            break;
-        case Sand:
-            update_sand(x, y);
-            break;
+        case Water: {
+            bool fell = fall_if_can(x, y);
+            if (fell) return;
+            spread_if_can(x, y);
+        } break;
+        case Sand: {
+            sink_if_can(x, y, Sand);
+            fall_if_can(x, y);
+        } break;
         case Wood:
             break;
-        case Smoke:
-            update_smoke(x, y);
-            break;
-        case Fire:
-            update_fire(x, y);
-            break;
+        case Smoke: {
+            sink_if_can(x, y, Smoke, -1);
+            fall_if_can(x, y, -1);
+            spread_if_can(x, y);
+        } break;
+        case Fire: {
+            int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+            int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+
+            if (rand() % 2 == 0 && empty(x, y - 1)) {
+                place(x, y - 1, Smoke);
+            }
+
+            Tile &t = grid[xy(x, y)];
+
+            for (int i = 0; i < 8; i++) {
+                int xp = x + dx[i];
+                int yp = y + dy[i];
+                if (!is_flammable(xp, yp)) continue;
+                place(xp, yp, Fire);
+                // reset lifetime since we were able to spread
+                t.lifetime = LIFESPAN;
+            }
+        } break;
     }
 }
 
-void draw(unsigned char *col, int elapsed) {
+void draw(unsigned char *col) {
     for (int i = 0; i < width; i++) {
         for (int j = 0; j < height; j++) {
             Tile &t = grid[xy(i, j)];
-            age(t, elapsed);
             drawColorForTile(col, i, j, t);
         }
     }
 }
 
-void update(unsigned char *col, uint32_t *px, int elapsed) {
+void update(int elapsed) {
     msSinceLastUpdate += elapsed;
 
     // Run updates  100/s
     if (msSinceLastUpdate > 10) {
-        msSinceLastUpdate = 0;
-        for (int i = 0; i < width; i++) {
-            for (int j = height - 1; j >= 0; j--) {
-                grid[xy(i, j)].updated = false;
-            }
+        for (int i = 0; i < width * height; i++) {
+            age(grid[i], msSinceLastUpdate);
+            grid[i].updated = false;
         }
+
+        msSinceLastUpdate = 0;
         for (int i = width - 1; i >= 0; i--) {
             for (int j = height - 1; j >= 0; j--) {
                 Tile &t = grid[xy(i, j)];
@@ -308,8 +298,6 @@ void update(unsigned char *col, uint32_t *px, int elapsed) {
             }
         }
     }
-
-    draw(col, elapsed);
 }
 
 int main() {
@@ -334,8 +322,6 @@ int main() {
 
     // Create a pixel buffer to fill with RGBA data
     unsigned char *pixbuff = new unsigned char[width * height * 4];
-    // Create uint32_t pointer to above for easy access as RGBA
-    uint32_t *intptr = (uint32_t *)pixbuff;
 
     std::chrono::time_point<std::chrono::steady_clock> endTime =
         std::chrono::steady_clock::now();
@@ -396,14 +382,15 @@ int main() {
 
         if (mouseDown) {
             auto pos = sf::Mouse::getPosition(window);
-            if (pos.x < 0 || pos.y < 0 || pos.x > window_width ||
-                pos.y > window_height) {
+            if (pos.x < 0 || pos.y < 0 || (uint)pos.x > window_width ||
+                (uint)pos.y > window_height) {
             } else {
                 place(pos.x / scale, pos.y / scale, selectedMaterial);
             }
         }
 
-        update(pixbuff, intptr, elapsed.count());
+        update(elapsed.count());
+        draw(pixbuff);
         // Update screen
         texture.update(pixbuff);
         sf::Sprite sprite(texture);
