@@ -14,6 +14,10 @@ all:
 	$(CCC) $(FLAGS) sf.cpp $(LIBS)
 	./a.out
 
+speed:
+	$(CCC) -O3 $(FLAGS) sf.cpp $(LIBS)
+	./a.out
+
 windows:
 	x86_64-w64-mingw32-g++ -std=gnu++20 -c sf.cpp -I./windows_build/SFML-2.5.1/include -Wno-narrowing
 	x86_64-w64-mingw32-g++ sf.o -o ./main_win.exe -L./windows_build/SFML-2.5.1/lib -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lwinpthread

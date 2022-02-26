@@ -30,8 +30,14 @@ const uint scale = 10;
 constexpr int width = int_ceil(1.f * window_width / scale) + 1;
 constexpr int height = int_ceil(1.f * window_height / scale) + 1;
 
+constexpr int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
+constexpr int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
+
+const int LIFESPAN = 1000;
+
 // run the program as long as the window is open
 int frame = 0;
+int msSinceLastUpdate = 0;
 
 enum Material {
     Empty = 0,
@@ -40,6 +46,8 @@ enum Material {
     Wood,
     Smoke,
     Fire,
+    Cloud,
+    Steam,
     Ground = 99,
 };
 
@@ -50,6 +58,7 @@ enum MaterialFlags {
     Falls = 4,
     Ages = 8,
     Flammable = 16,
+    Emits = 32,
 };
 
 struct Tile {
@@ -57,6 +66,8 @@ struct Tile {
     bool updated;
     float lifetime;
 };
+
+Material selectedMaterial = Water;
 
 int getColorForMat(Material mat) {
     switch (mat) {
@@ -74,6 +85,10 @@ int getColorForMat(Material mat) {
             return rgb(5, 12, 12);
         case Fire:
             return rgb(255, 42, 42);
+        case Cloud:
+            return rgb(255, 255, 255, 150);
+        case Steam:
+            return rgb(200, 200, 200, 100);
     }
     return 0;
 }
@@ -99,6 +114,10 @@ inline int flags(Material m) {
             return Floats | Ages;
         case Fire:
             return None | Ages;
+        case Cloud:
+            return Solid | Emits;
+        case Steam:
+            return Floats | Ages;
         case Ground:
             return Solid;
     }
@@ -129,7 +148,6 @@ inline bool sink(int x, int y, Material m) {
 
 inline void clear(int x, int y) { grid[xy(x, y)] = Tile(); }
 
-const int LIFESPAN = 1000;
 void _place(int x, int y, Material m) {
     if (!inbounds(x, y)) return;
     Tile &t = grid[xy(x, y)];
@@ -139,21 +157,32 @@ void _place(int x, int y, Material m) {
 
 void place(int x, int y, Material m) {
     if (scale < 100) {
-        int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1, 0};
-        int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1, 0};
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 8; i++) {
             _place(x + dx[i], y + dy[i], m);
         }
-
+        _place(x, y, m);
     } else {
         _place(x, y, m);
     }
+}
+
+void place_if_empty(int x, int y, Material m) {
+    if (empty(x, y)) return;
+    place(x, y, m);
 }
 
 inline int pos_if_empty(int x, int y) {
     if (!inbounds(x, y)) return 0;
     return empty(x, y) ? xy(x, y) : 0;
 }
+
+void emit(int x, int y, Tile &t, Material p) {
+    if (t.lifetime > 0) {
+        place_if_empty(x, y, p);
+    }
+    t.lifetime -= 10;
+}
+
 bool fall_if_can(int x, int y, int dir = 1) {
     Tile &t = grid[xy(x, y)];
     int pos = 0;
@@ -217,17 +246,16 @@ void spread_if_can(int x, int y) {
     t.updated = true;
 }
 
-void drawColorForTile(unsigned char *pic, int i, int j, Tile &t) {
+void drawColorForTile(unsigned char *pic, int i, const Tile &t) {
     int color = getColorForMat(t.material);
-    pic[xy(i, j) * 4] = (color & 0xFF000000) >> 24;
-    pic[xy(i, j) * 4 + 1] = (color & 0x00FF0000) >> 16;
-    pic[xy(i, j) * 4 + 2] = (color & 0x0000FF00) >> 8;
-    pic[xy(i, j) * 4 + 3] = (int)((1.f * t.lifetime / LIFESPAN) * 255);
+    pic[i * 4] = (color & 0xFF000000) >> 24;
+    pic[i * 4 + 1] = (color & 0x00FF0000) >> 16;
+    pic[i * 4 + 2] = (color & 0x0000FF00) >> 8;
+    pic[i * 4 + 3] = (int)((1.f * t.lifetime / LIFESPAN) * 255);
 }
 
-int msSinceLastUpdate = 0;
-
 void update_for_material(Material material, int x, int y) {
+    Tile &t = grid[xy(x, y)];
     switch (material) {
         case Empty:
         case Ground:
@@ -243,39 +271,39 @@ void update_for_material(Material material, int x, int y) {
         } break;
         case Wood:
             break;
+        case Steam:
         case Smoke: {
-            sink_if_can(x, y, Smoke, -1);
+            sink_if_can(x, y, material, -1);
             fall_if_can(x, y, -1);
             spread_if_can(x, y);
         } break;
         case Fire: {
-            int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-            int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
-
             if (rand() % 2 == 0 && empty(x, y - 1)) {
                 place(x, y - 1, Smoke);
             }
-
-            Tile &t = grid[xy(x, y)];
-
             for (int i = 0; i < 8; i++) {
                 int xp = x + dx[i];
                 int yp = y + dy[i];
-                if (!is_flammable(xp, yp)) continue;
-                place(xp, yp, Fire);
-                // reset lifetime since we were able to spread
-                t.lifetime = LIFESPAN;
+                if (is_flammable(xp, yp)) {
+                    place(xp, yp, Fire);
+                    // reset lifetime since we were able to spread
+                    t.lifetime = LIFESPAN / 2.f;
+                }
+                if (grid[xy(xp, yp)].material == Water) {
+                    place(xp, yp, Steam);
+                    continue;
+                }
             }
+        } break;
+        case Cloud: {
+            emit(x, y + 2, t, Water);
         } break;
     }
 }
 
 void draw(unsigned char *col) {
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            Tile &t = grid[xy(i, j)];
-            drawColorForTile(col, i, j, t);
-        }
+    for (int i = 0; i < width * height; i++) {
+        drawColorForTile(col, i, grid[i]);
     }
 }
 
@@ -293,6 +321,10 @@ void update(int elapsed) {
         for (int i = width - 1; i >= 0; i--) {
             for (int j = height - 1; j >= 0; j--) {
                 Tile &t = grid[xy(i, j)];
+                if (t.lifetime <= 0) {
+                    clear(i, j);
+                    continue;
+                }
                 if (t.updated) continue;
                 update_for_material(t.material, i, j);
             }
@@ -300,7 +332,7 @@ void update(int elapsed) {
     }
 }
 
-int main() {
+void place_starting() {
     place(10, 10, Wood);
 
     for (int i = 0; i < width; i++) {
@@ -311,6 +343,38 @@ int main() {
         place(0, i, Ground);
         place(width - 1, i, Ground);
     }
+}
+
+void handle_keycode(int code) {
+    switch (code) {
+        case sf::Keyboard::E:
+            selectedMaterial = Empty;
+            break;
+        case sf::Keyboard::S:
+            selectedMaterial = Sand;
+            break;
+        case sf::Keyboard::W:
+            selectedMaterial = Water;
+            break;
+        case sf::Keyboard::T:
+            selectedMaterial = Wood;
+            break;
+        case sf::Keyboard::Y:
+            selectedMaterial = Smoke;
+            break;
+        case sf::Keyboard::F:
+            selectedMaterial = Fire;
+            break;
+        case sf::Keyboard::C:
+            selectedMaterial = Cloud;
+            break;
+        default:
+            break;
+    }
+}
+
+int main() {
+    place_starting();
 
     // create the window
     sf::RenderWindow window(sf::VideoMode(window_width, window_height),
@@ -326,8 +390,9 @@ int main() {
     std::chrono::time_point<std::chrono::steady_clock> endTime =
         std::chrono::steady_clock::now();
 
+    float counting;
+
     bool mouseDown = false;
-    Material selectedMaterial = Water;
     while (window.isOpen()) {
         std::chrono::time_point<std::chrono::steady_clock> startTime =
             std::chrono::steady_clock::now();
@@ -335,6 +400,7 @@ int main() {
             std::chrono::duration_cast<std::chrono::milliseconds>(startTime -
                                                                   endTime));
         endTime = startTime;
+        counting += elapsed.count();
 
         // check all the window's events that were triggered since the last
         // iteration of the loop
@@ -343,28 +409,7 @@ int main() {
             // "close requested" event: we close the window
             if (event.type == sf::Event::Closed) window.close();
             if (event.type == sf::Event::KeyPressed) {
-                switch (event.key.code) {
-                    case sf::Keyboard::E:
-                        selectedMaterial = Empty;
-                        break;
-                    case sf::Keyboard::S:
-                        selectedMaterial = Sand;
-                        break;
-                    case sf::Keyboard::W:
-                        selectedMaterial = Water;
-                        break;
-                    case sf::Keyboard::T:
-                        selectedMaterial = Wood;
-                        break;
-                    case sf::Keyboard::Y:
-                        selectedMaterial = Smoke;
-                        break;
-                    case sf::Keyboard::F:
-                        selectedMaterial = Fire;
-                        break;
-                    default:
-                        break;
-                }
+                handle_keycode(event.key.code);
                 if (event.key.code == sf::Keyboard::Escape) {
                     window.close();
                 }
@@ -398,8 +443,13 @@ int main() {
         window.draw(sprite);
         // end the current frame
         window.display();
-        // std::cout << "Frame: " << frame << std::endl;
+
         frame++;
+        if (counting > 1000) {
+            counting = 0;
+            std::cout << "fps: " << frame << std::endl;
+            frame = 0;
+        }
     }
 
     return 0;
