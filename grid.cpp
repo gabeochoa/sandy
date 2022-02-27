@@ -42,10 +42,18 @@ void Grid::place(int x, int y, const std::shared_ptr<Element>& e) {
     grid[xy(x, y)] = e;
 }
 
-void Grid::place(int x, int y, Material type) {
-    if (!this->valid(x, y)) return;
-    std::shared_ptr<Element> e;
+void Grid::clear(int x, int y) {
+    return this->_place(x, y, materialToElement(Material::Empty));
+}
 
+bool Grid::place_if_empty(int x, int y, Material type) {
+    if (!valid(x, y)) return false;
+    if (!empty(x, y)) return false;
+    this->place(x, y, type);
+    return true;
+}
+std::shared_ptr<Element> Grid::materialToElement(Material type) {
+    std::shared_ptr<Element> e;
     switch (type) {
         case Empty:
             e = std::shared_ptr<Element>(new struct Empty());
@@ -57,13 +65,24 @@ void Grid::place(int x, int y, Material type) {
             e = std::shared_ptr<Element>(new struct Water());
             break;
         case Wood:
+            e = std::shared_ptr<Element>(new struct Wood());
+            break;
         case Smoke:
+            e = std::shared_ptr<Element>(new struct Smoke());
+            break;
         case Fire:
+            e = std::shared_ptr<Element>(new struct Fire());
+            break;
         case Cloud:
         case Steam:
-        case Ground:
             break;
     }
+    return e;
+}
+
+void Grid::place(int x, int y, Material type) {
+    if (!this->valid(x, y)) return;
+    auto e = this->materialToElement(type);
     if (e) this->_place(x, y, e);
     return;
 }

@@ -375,6 +375,13 @@ inline void update(int elapsed) {
                 grid->at(i, j)->updated = false;
             }
         }
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                if (grid->at(i, j)->lifetime <= 0) {
+                    grid->clear(i, j);
+                }
+            }
+        }
         msSinceLastUpdate = 0;
     }
 }

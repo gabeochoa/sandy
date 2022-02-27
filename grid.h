@@ -17,11 +17,14 @@ struct Grid {
     void _place(int x, int y, const std::shared_ptr<Element>& e);
     void place(int x, int y, const std::shared_ptr<Element>& e);
     void place(int x, int y, Material type);
+    bool place_if_empty(int x, int y, Material type);
+    void clear(int x, int y);
     bool empty(int x, int y) const;
     bool swap(int x, int y, int a, int b);
     int colorat(int i) const;
     void update(int x, int y, float dt) const;
     bool lessdense(int x, int y, float density) const;
+    std::shared_ptr<Element> materialToElement(Material);
 
     template <typename T>
     bool matching(int x, int y) const;

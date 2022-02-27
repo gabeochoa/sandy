@@ -10,5 +10,4 @@ enum Material {
     Fire,
     Cloud,
     Steam,
-    Ground = 99,
 };
