@@ -11,4 +11,7 @@ enum Material {
     Cloud,
     Steam,
     Blackhole,
+    Dirt,
+    Torch,
+    Oil,
 };

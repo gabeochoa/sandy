@@ -351,6 +351,15 @@ void handle_keycode(int code) {
         case sf::Keyboard::B:
             selectedMaterial = Material::Blackhole;
             break;
+        case sf::Keyboard::D:
+            selectedMaterial = Material::Dirt;
+            break;
+        case sf::Keyboard::H:
+            selectedMaterial = Material::Torch;
+            break;
+        case sf::Keyboard::O:
+            selectedMaterial = Material::Oil;
+            break;
         default:
             break;
     }

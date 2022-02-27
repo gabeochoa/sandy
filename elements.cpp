@@ -36,9 +36,11 @@ void Element::update_fire(int x, int y, float dt) {
     auto grid = Grid::get();
     this->lifetime -= dt;
     // TODO replace smoke when water is on fire
-    for (int i = 0; i < 8; i++) {
-        if (grid->place_if_empty(x + dx[i], y + dy[i], Material::Smoke)) {
-            break;
+    if (rand() % 100 < 50) {
+        for (int i = 0; i < 8; i++) {
+            if (grid->place_if_empty(x + dx[i], y + dy[i], Material::Smoke)) {
+                break;
+            }
         }
     }
 
@@ -118,6 +120,17 @@ void Cloud::update(int x, int y, float) {
     if (grid->matching<struct Empty>(x, waterPlacementYIndex) ||
         grid->matching<struct Smoke>(x, waterPlacementYIndex)) {
         grid->place(x, waterPlacementYIndex, Water);
+    }
+}
+
+void Torch::update(int x, int y, float) {
+    if (rand() % 100 < 99) {
+        return;
+    }
+    for (int i = 0; i < 8; i++) {
+        if (Grid::get()->place_if_empty(x + dx[i], y + dy[i], Material::Fire)) {
+            break;
+        }
     }
 }
 

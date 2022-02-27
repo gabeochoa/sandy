@@ -91,10 +91,33 @@ struct Sand : public FallingSolid {
     Material material() const override { return Material::Sand; }
 };
 
+struct Dirt : public FallingSolid {
+    Dirt() : FallingSolid() { friction = 1.0f; }
+    int color() override { return rgb(52, 30, 17); }
+    Material material() const override { return Material::Dirt; }
+};
+
 struct Water : public Liquid {
     Water() : Liquid() {}
     int color() override { return rgb(0, 0, 250); }
     Material material() const override { return Material::Water; }
+};
+
+struct Oil : public Liquid {
+    Oil() : Liquid() {}
+    int color() override {
+        if (this->onfire) {
+            return rgb(100, 10, 20);
+        }
+        return rgb(10, 10, 20);
+    }
+    void update(int x, int y, float dt) override {
+        Liquid::update(x, y, dt);
+        this->update_fire(x, y, dt);
+    }
+    Material material() const override { return Material::Oil; }
+    virtual bool flammable() const override { return true; }
+    virtual bool spreads_fire() const override { return true; }
 };
 
 struct Fire : public Solid {
@@ -131,6 +154,15 @@ struct Cloud : public Solid {
     int color() override { return rgb(250, 250, 250); }
     void update(int x, int y, float dt) override;
     Material material() const override { return Material::Cloud; }
+};
+
+struct Torch : public Solid {
+    Torch() : Solid() { this->onfire = true; }
+    int color() override { return rgb(250, 250, 0); }
+    void update(int x, int y, float dt) override;
+    Material material() const override { return Material::Torch; }
+    virtual bool flammable() const override { return true; }
+    virtual bool spreads_fire() const override { return true; }
 };
 
 struct Blackhole : public Solid {

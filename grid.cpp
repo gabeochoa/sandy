@@ -82,6 +82,15 @@ std::shared_ptr<Element> Grid::materialToElement(Material type) {
         case Blackhole:
             e = std::shared_ptr<Element>(new struct Blackhole());
             break;
+        case Dirt:
+            e = std::shared_ptr<Element>(new struct Dirt());
+            break;
+        case Torch:
+            e = std::shared_ptr<Element>(new struct Torch());
+            break;
+        case Oil:
+            e = std::shared_ptr<Element>(new struct Oil());
+            break;
     }
     return e;
 }
