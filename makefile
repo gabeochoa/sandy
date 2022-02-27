@@ -12,7 +12,7 @@ MFLAGS = -MMD -MP
 
 
 all: 
-	$(CCC) $(DEBUG_FLAGS) $(FLAGS) sf.cpp $(LIBS)
+	$(CCC) $(DEBUG_FLAGS) $(FLAGS) grid.cpp sf.cpp elements.cpp $(LIBS)
 	./a.out
 
 speed:

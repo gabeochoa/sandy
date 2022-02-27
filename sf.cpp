@@ -3,55 +3,18 @@
 #include <chrono>
 #include <cmath>
 #include <iostream>
+#include <memory>
 #include <thread>
 
-typedef unsigned int uint;
-typedef unsigned char uchar;
-
-constexpr int int_ceil(float f) {
-    const int i = static_cast<int>(f);
-    return f > i ? i + 1 : i;
-}
-
-inline int rgb(uchar r, uchar g, uchar b, uchar a = 255) {
-    return (r << 24) | (g << 16) | (b << 8) | (a);
-}
-
-// #define SHOW_FPS
-
-#if 1
-const uint window_width = 1920;
-const uint window_height = 1080;
-#else
-const unsigned int window_width = 3840;
-const unsigned int window_height = 2160;
-#endif
-
-const uint scale = 10;
-
-constexpr int width = int_ceil(1.f * window_width / scale) + 1;
-constexpr int height = int_ceil(1.f * window_height / scale) + 1;
-
-constexpr int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-constexpr int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
-
-const int LIFESPAN = 1000;
+#include "utils.h"
 
 // run the program as long as the window is open
 int frame = 0;
 int msSinceLastUpdate = 0;
 
-enum Material {
-    Empty = 0,
-    Sand,
-    Water,
-    Wood,
-    Smoke,
-    Fire,
-    Cloud,
-    Steam,
-    Ground = 99,
-};
+/*
+const int LIFESPAN = 1000;
+
 
 enum MaterialFlags {
     None = 0,
@@ -320,8 +283,8 @@ void update(int elapsed) {
         }
 
         msSinceLastUpdate = 0;
-        for (int i = width - 1; i >= 0; i--) {
-            for (int j = height - 1; j >= 0; j--) {
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
                 Tile &t = grid[xy(i, j)];
                 if (t.lifetime <= 0) {
                     clear(i, j);
@@ -347,37 +310,77 @@ void place_starting() {
     }
 }
 
+*/
+
+#include "elements.h"
+#include "grid.h"
+#include "materials.h"
+
+Material selectedMaterial = Material::Sand;
 void handle_keycode(int code) {
     switch (code) {
         case sf::Keyboard::E:
-            selectedMaterial = Empty;
+            selectedMaterial = Material::Empty;
             break;
         case sf::Keyboard::S:
-            selectedMaterial = Sand;
+            selectedMaterial = Material::Sand;
             break;
         case sf::Keyboard::W:
-            selectedMaterial = Water;
+            selectedMaterial = Material::Water;
             break;
         case sf::Keyboard::T:
-            selectedMaterial = Wood;
+            selectedMaterial = Material::Wood;
             break;
         case sf::Keyboard::Y:
-            selectedMaterial = Smoke;
+            selectedMaterial = Material::Smoke;
             break;
         case sf::Keyboard::F:
-            selectedMaterial = Fire;
+            selectedMaterial = Material::Fire;
             break;
         case sf::Keyboard::C:
-            selectedMaterial = Cloud;
+            selectedMaterial = Material::Cloud;
             break;
         default:
             break;
     }
+    std::cout << "selected material is now: " << selectedMaterial << std::endl;
+}
+
+inline void draw(unsigned char* pic) {
+    auto grid = Grid::get();
+    for (int i = 0; i < width * height; i++) {
+        int color = grid->colorat(i);
+        pic[i * 4] = (color & 0xFF000000) >> 24;
+        pic[i * 4 + 1] = (color & 0x00FF0000) >> 16;
+        pic[i * 4 + 2] = (color & 0x0000FF00) >> 8;
+        pic[i * 4 + 3] = 255;
+    }
+}
+
+inline void update(int elapsed) {
+    msSinceLastUpdate += elapsed;
+
+    // Run updates  100/s
+    if (msSinceLastUpdate > 10) {
+        auto grid = Grid::get();
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                if (grid->at(i, j)->updated) continue;
+                grid->at(i, j)->updated = true;
+                grid->update(i, j, msSinceLastUpdate);
+            }
+        }
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                grid->at(i, j)->updated = false;
+            }
+        }
+        msSinceLastUpdate = 0;
+    }
 }
 
 int main() {
-    place_starting();
-
+    auto grid = Grid::get();
     // create the window
     sf::RenderWindow window(sf::VideoMode(window_width, window_height),
                             "I'm just one grain of sand on this beach");
@@ -387,13 +390,12 @@ int main() {
     texture.create(width, height);
 
     // Create a pixel buffer to fill with RGBA data
-    unsigned char *pixbuff = new unsigned char[width * height * 4];
+    unsigned char* pixbuff = new unsigned char[width * height * 4];
 
     std::chrono::time_point<std::chrono::steady_clock> endTime =
         std::chrono::steady_clock::now();
 
-    float counting;
-
+    float counting = 0;
     bool mouseDown = false;
     while (window.isOpen()) {
         std::chrono::time_point<std::chrono::steady_clock> startTime =
@@ -432,7 +434,8 @@ int main() {
             if (pos.x < 0 || pos.y < 0 || (uint)pos.x > window_width ||
                 (uint)pos.y > window_height) {
             } else {
-                place(pos.x / scale, pos.y / scale, selectedMaterial);
+                Grid::get()->place(pos.x / scale, pos.y / scale,
+                                   selectedMaterial);
             }
         }
 
