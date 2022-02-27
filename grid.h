@@ -27,8 +27,11 @@ struct Grid {
     std::shared_ptr<Element> materialToElement(Material);
 
     template <typename T>
-    bool matching(int x, int y) const;
+    bool matching(int x, int y) const {
+        if (!this->valid(x, y)) return false;
+        std::shared_ptr<T> me = std::dynamic_pointer_cast<T>(at(x, y));
+        return (bool)me;
+    }
 
     static std::shared_ptr<Grid> get();
 };
-

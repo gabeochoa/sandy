@@ -74,6 +74,8 @@ std::shared_ptr<Element> Grid::materialToElement(Material type) {
             e = std::shared_ptr<Element>(new struct Fire());
             break;
         case Cloud:
+            e = std::shared_ptr<Element>(new struct Cloud());
+            break;
         case Steam:
             break;
     }
@@ -90,13 +92,6 @@ void Grid::place(int x, int y, Material type) {
 bool Grid::empty(int x, int y) const {
     if (!valid(x, y)) return false;
     return this->matching<struct Empty>(x, y);
-}
-
-template <typename T>
-bool Grid::matching(int x, int y) const {
-    if (!valid(x, y)) return false;
-    std::shared_ptr<T> me = std::dynamic_pointer_cast<T>(at(x, y));
-    return (bool)me;
 }
 
 bool Grid::swap(int x, int y, int a, int b) {

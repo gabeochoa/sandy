@@ -104,3 +104,24 @@ void Fire::update(int x, int y, float dt) {
     // }
     // }
 }
+
+void Cloud::update(int x, int y, float) {
+    if (rand() % 100 < 99) {
+        return;
+    }
+
+    auto grid = Grid::get();
+    int waterPlacementYIndex = y + 1;
+    // Find the next non-cloud tile vertically below
+    while (waterPlacementYIndex < height &&
+           grid->matching<struct Cloud>(x, waterPlacementYIndex)) {
+        waterPlacementYIndex++;
+    }
+    if (grid->matching<struct Empty>(x, waterPlacementYIndex)) {
+        grid->place(x, waterPlacementYIndex, Water);
+    }
+    // if (grid->matching<struct Empty>(x, waterPlacementYIndex) ||
+    // grid->matching<struct Smoke>(x, waterPlacementYIndex)) {
+    // grid->place(x, waterPlacementYIndex, Water);
+    // }
+}

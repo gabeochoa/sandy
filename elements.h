@@ -103,3 +103,9 @@ struct Smoke : public Gas {
     }
     Material material() const override { return Material::Smoke; }
 };
+
+struct Cloud : public Solid {
+    int color() override { return rgb(250, 250, 250); }
+    void update(int x, int y, float dt) override;
+    Material material() const override { return Material::Cloud; }
+};
