@@ -14,6 +14,7 @@ Grid::Grid() {
     for (int i = 0; i < width * height; i++) {
         grid[i] = std::shared_ptr<Element>(new struct Empty());
     }
+    fluid = std::make_shared<FS>(0.02f, 100.1, 0.01f);
 }
 
 std::shared_ptr<Grid> Grid::get() {

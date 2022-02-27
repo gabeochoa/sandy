@@ -34,7 +34,14 @@ constexpr int height = int_ceil(1.f * window_height / scale) - 1;
 constexpr int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
 constexpr int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
 
-inline int xy(int x, int y) { return y * width + x; }
+inline int xy(int x, int y) {
+    // TODO idk if we should do this for everything
+    if (y >= height) y = height - 1;
+    if (x >= width) x = width - 1;
+    if (y < 0) y = 0;
+    if (x < 0) x = 0;
+    return y * width + x;
+}
 inline bool in(int x, int y) {
     return x >= 0 && y >= 0 && x < width && y < height;
 }
