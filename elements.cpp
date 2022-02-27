@@ -6,27 +6,28 @@
 #include "grid.h"
 #include "materials.h"
 
-bool Element::fall(int x, int y, float) {
+bool Element::fall(int x, int y, float, int dir) {
     auto grid = Grid::get();
-    if (grid->empty(x, y + 1)) {
-        grid->swap(x, y, x, y + 1);
-    } else if (this->friction < 0.5 && grid->empty(x - 1, y + 1)) {
-        grid->swap(x, y, x - 1, y + 1);
-    } else if (this->friction < 0.5 && grid->empty(x + 1, y + 1)) {
-        grid->swap(x, y, x + 1, y + 1);
-    } else if (grid->lessdense(x, y + 1, this->density)) {
-        grid->swap(x, y, x, y + 1);
+    if (grid->empty(x, y + dir)) {
+        grid->swap(x, y, x, y + dir);
+    } else if (this->friction < 0.5 && grid->empty(x - 1, y + dir)) {
+        grid->swap(x, y, x - 1, y + dir);
+    } else if (this->friction < 0.5 && grid->empty(x + 1, y + dir)) {
+        grid->swap(x, y, x + 1, y + dir);
+    } else if (grid->lessdense(x, y + dir, this->density)) {
+        grid->swap(x, y, x, y + dir);
     } else if (this->friction < 0.5 &&
-               grid->lessdense(x - 1, y + 1, this->density)) {
-        grid->swap(x, y, x - 1, y + 1);
+               grid->lessdense(x - 1, y + dir, this->density)) {
+        grid->swap(x, y, x - 1, y + dir);
     } else if (this->friction < 0.5 &&
-               grid->lessdense(x + 1, y + 1, this->density)) {
-        grid->swap(x, y, x + 1, y + 1);
+               grid->lessdense(x + 1, y + dir, this->density)) {
+        grid->swap(x, y, x + 1, y + dir);
     } else {
         return false;
     }
     return true;
 }
+
 void Element::update_fire(int x, int y, float dt) {
     if (!this->onfire) {
         return;
@@ -79,23 +80,10 @@ void Liquid::update(int x, int y, float dt) {
 
 void Gas::update(int x, int y, float dt) {
     this->lifetime -= dt;
-    auto grid = Grid::get();
-
-    if (grid->empty(x, y - 1)) {
-        grid->swap(x, y, x, y - 1);
-    } else if (this->friction < 0.5 && grid->empty(x - 1, y - 1)) {
-        grid->swap(x, y, x - 1, y - 1);
-    } else if (this->friction < 0.5 && grid->empty(x + 1, y - 1)) {
-        grid->swap(x, y, x + 1, y - 1);
-    } else if (grid->lessdense(x, y - 1, this->density)) {
-        grid->swap(x, y, x, y - 1);
-    } else if (this->friction < 0.5 &&
-               grid->lessdense(x - 1, y - 1, this->density)) {
-        grid->swap(x, y, x - 1, y - 1);
-    } else if (this->friction < 0.5 &&
-               grid->lessdense(x + 1, y - 1, this->density)) {
-        grid->swap(x, y, x + 1, y - 1);
+    if (Element::fall(x, y, dt, -1)) {
+        return;
     } else {
+        auto grid = Grid::get();
         if (this->heading == 0) {
             int spread = width;
             this->heading = rand() % 2 == 0 ? spread : -spread;

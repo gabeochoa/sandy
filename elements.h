@@ -28,7 +28,7 @@ struct Element {
     virtual ~Element() {}
     virtual int color() = 0;
     virtual void update(int x, int y, float dt) = 0;
-    bool fall(int x, int y, float);
+    bool fall(int x, int y, float, int dir = 1);
     virtual Material material() const = 0;
 
     //
