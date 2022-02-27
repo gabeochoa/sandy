@@ -35,7 +35,6 @@ void Element::update_fire(int x, int y, float dt) {
 
     auto grid = Grid::get();
     this->lifetime -= dt;
-
     // TODO replace smoke when water is on fire
     for (int i = 0; i < 8; i++) {
         if (grid->place_if_empty(x + dx[i], y + dy[i], Material::Smoke)) {
@@ -43,15 +42,16 @@ void Element::update_fire(int x, int y, float dt) {
         }
     }
 
-    // only burn if not our first update
-    if (this->lifetime > 0.9 * LIFETIME) {
-        return;
-    }
-
-    for (int i = 0; i < 8; i++) {
-        if (grid->flammable(x + dx[i], y + dy[i])) {
-            if (rand() % 100 > 90) {
-                grid->place(x + dx[i], y + dy[i], Material::Fire);
+    if (this->spreads_fire()) {
+        // only burn if not our first update
+        if (this->lifetime > 0.9 * LIFETIME) {
+            return;
+        }
+        for (int i = 0; i < 8; i++) {
+            if (grid->flammable(x + dx[i], y + dy[i])) {
+                if (rand() % 100 > 90) {
+                    grid->at(x + dx[i], y + dy[i])->onfire = true;
+                }
             }
         }
     }
@@ -101,25 +101,7 @@ void Gas::update(int x, int y, float dt) {
     }
 }
 
-void Fire::update(int x, int y, float dt) {
-    auto grid = Grid::get();
-    this->lifetime -= dt;
-    // TODO should there only be smoke when something is burning
-    for (int i = 0; i < 8; i++) {
-        if ((rand() % 100) > 99) continue;
-        if (grid->place_if_empty(x + dx[i], y + dy[i], Material::Smoke)) {
-            break;
-        }
-    }
-
-    for (int i = 0; i < 8; i++) {
-        if (grid->flammable(x + dx[i], y + dy[i])) {
-            if (rand() % 100 > 0.9) {
-                grid->at(x + dx[i], y + dy[i])->onfire = true;
-            }
-        }
-    }
-}
+void Fire::update(int x, int y, float dt) { this->update_fire(x, y, dt); }
 
 void Cloud::update(int x, int y, float) {
     if (rand() % 100 < 99) {

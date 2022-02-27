@@ -33,6 +33,7 @@ struct Element {
 
     //
     virtual bool flammable() const { return false; }
+    virtual bool spreads_fire() const { return false; }
     void update_fire(int x, int y, float dt);
 };
 
@@ -70,10 +71,16 @@ struct StillSolid : public Solid {
 
 struct Wood : public StillSolid {
     Wood() : StillSolid() { friction = 1.0f; }
-    int color() override { return rgb(55, 25, 0); }
+    int color() override {
+        if (this->onfire) {
+            return rgb(155, 25, 0);
+        }
+        return rgb(55, 25, 0);
+    }
     Material material() const override { return Material::Wood; }
     bool flammable() const override { return true; }
-    virtual void update(int x, int y, float dt) override {
+    bool spreads_fire() const override { return true; }
+    void update(int x, int y, float dt) override {
         this->update_fire(x, y, dt);
     }
 };
@@ -91,13 +98,18 @@ struct Water : public Liquid {
 };
 
 struct Fire : public Solid {
-    Fire() : Solid() { this->friction = 1; }
+    Fire() : Solid() {
+        this->friction = 1;
+        this->onfire = true;
+    }
     void update(int x, int y, float dt) override;
     int color() override {
         int alpha = std::floor((this->lifetime / LIFETIME) * 255);
         return rgb(255, 0, 0, alpha);
     }
     Material material() const override { return Material::Fire; }
+    virtual bool flammable() const override { return true; }
+    virtual bool spreads_fire() const override { return true; }
 };
 
 struct Smoke : public Gas {
