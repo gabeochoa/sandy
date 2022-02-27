@@ -317,8 +317,16 @@ void place_starting() {
 #include "materials.h"
 
 Material selectedMaterial = Material::Sand;
+int penRadius = 1;
+
 void handle_keycode(int code) {
     switch (code) {
+        case sf::Keyboard::Num1:
+            penRadius += 1;
+            break;
+        case sf::Keyboard::Num2:
+            penRadius -= 1;
+            break;
         case sf::Keyboard::E:
             selectedMaterial = Material::Empty;
             break;
@@ -343,7 +351,11 @@ void handle_keycode(int code) {
         default:
             break;
     }
-    std::cout << "selected material is now: " << selectedMaterial << std::endl;
+
+    penRadius = fmin(height, fmax(0, penRadius));
+
+    std::cout << "now selected " << selectedMaterial << ", pen " << penRadius
+              << std::endl;
 }
 
 inline void draw(unsigned char* pic) {
@@ -441,8 +453,8 @@ int main() {
             if (pos.x < 0 || pos.y < 0 || (uint)pos.x > window_width ||
                 (uint)pos.y > window_height) {
             } else {
-                Grid::get()->place(pos.x / scale, pos.y / scale,
-                                   selectedMaterial);
+                Grid::get()->place_in_circle(pos.x / scale, pos.y / scale,
+                                             penRadius, selectedMaterial);
             }
         }
 

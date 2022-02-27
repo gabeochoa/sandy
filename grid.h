@@ -17,6 +17,7 @@ struct Grid {
     void _place(int x, int y, const std::shared_ptr<Element>& e);
     void place(int x, int y, const std::shared_ptr<Element>& e);
     void place(int x, int y, Material type);
+    void place_in_circle(int x, int y, int r, Material type);
     bool place_if_empty(int x, int y, Material type);
     void clear(int x, int y);
     bool empty(int x, int y) const;

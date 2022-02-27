@@ -89,6 +89,11 @@ void Grid::place(int x, int y, Material type) {
     return;
 }
 
+void Grid::place_in_circle(int x, int y, int r, Material type) {
+    circle(x, y, r, [type](int i, int j) { Grid::get()->place(i, j, type); });
+    return;
+}
+
 bool Grid::empty(int x, int y) const {
     if (!valid(x, y)) return false;
     return this->matching<struct Empty>(x, y);

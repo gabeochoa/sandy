@@ -1,6 +1,9 @@
 
 #pragma once
 
+#include <cmath>
+#include <functional>
+
 typedef unsigned int uint;
 typedef unsigned char uchar;
 
@@ -34,5 +37,20 @@ constexpr int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
 inline int xy(int x, int y) { return y * width + x; }
 inline bool in(int x, int y) {
     return x >= 0 && y >= 0 && x < width && y < height;
+}
+
+inline void circle(int x, int y, int r,
+                   const std::function<void(int, int)>& func) {
+    int top = y - r;
+    int bottom = y + r;
+    for (int j = top; j <= bottom; j++) {
+        int yd = j - y;
+        int xd = sqrt(r * r - yd * yd);
+        int left = ceil(x - xd);
+        int right = floor(x + xd);
+        for (int i = left; i <= right; i++) {
+            func(i, j);
+        }
+    }
 }
 
