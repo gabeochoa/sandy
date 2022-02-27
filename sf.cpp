@@ -348,6 +348,9 @@ void handle_keycode(int code) {
         case sf::Keyboard::C:
             selectedMaterial = Material::Cloud;
             break;
+        case sf::Keyboard::B:
+            selectedMaterial = Material::Blackhole;
+            break;
         default:
             break;
     }

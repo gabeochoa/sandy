@@ -43,6 +43,7 @@ void Grid::place(int x, int y, const std::shared_ptr<Element>& e) {
 }
 
 void Grid::clear(int x, int y) {
+    if (!valid(x, y)) return;
     return this->_place(x, y, materialToElement(Material::Empty));
 }
 
@@ -77,6 +78,9 @@ std::shared_ptr<Element> Grid::materialToElement(Material type) {
             e = std::shared_ptr<Element>(new struct Cloud());
             break;
         case Steam:
+            break;
+        case Blackhole:
+            e = std::shared_ptr<Element>(new struct Blackhole());
             break;
     }
     return e;

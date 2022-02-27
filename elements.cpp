@@ -120,3 +120,51 @@ void Cloud::update(int x, int y, float) {
         grid->place(x, waterPlacementYIndex, Water);
     }
 }
+
+void Blackhole::update(int x, int y, float) {
+    auto grid = Grid::get();
+    int pullRange = 10;
+    int pullRadius = pullRange / 2;
+    for (int row = x - pullRadius; row <= x + pullRadius; row++) {
+        for (int col = y + pullRadius; col >= y - pullRadius; col--) {
+            if (!in(row, col)) continue;
+            auto tile = grid->at(row, col);
+            if (grid->matching<struct Empty>(row, col)) continue;
+            if (grid->matching<struct Blackhole>(row, col)) continue;
+            // Translate the tile in question towards the x,y
+            // A positive xd will imply the tile moves right.
+            int xd = 0;
+            // A negative yd will imply the tile moves up.
+            int yd = 0;
+
+            // 1. Determine horizontal translation.
+            // left of black hole
+            if (row < x) {
+                xd = 1;
+            }
+            // right of black hole
+            else if (row > x) {
+                xd = -1;
+            }
+
+            // 2. Determine vertical translation.
+            // below black hole
+            if (col > y) {
+                yd = -1;
+            }
+            // above black hole
+            else if (col < y) {
+                yd = 1;
+            }
+            if (row + xd != x || col + yd != y) {
+                if (grid->matching<Blackhole>(row + xd, col + yd)) continue;
+                if (rand() % 100 < 60) continue;
+                grid->swap(row, col, row + xd, col + yd);
+            }
+        }
+    }
+    for (int i = 0; i < 8; i++) {
+        // clear all the ones around the black hole
+        grid->clear(x + dx[i], y + dy[i]);
+    }
+}

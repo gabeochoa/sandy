@@ -132,3 +132,9 @@ struct Cloud : public Solid {
     void update(int x, int y, float dt) override;
     Material material() const override { return Material::Cloud; }
 };
+
+struct Blackhole : public Solid {
+    int color() override { return rgb(200, 0, 200); }
+    void update(int x, int y, float dt) override;
+    Material material() const override { return Material::Blackhole; }
+};

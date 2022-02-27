@@ -10,4 +10,5 @@ enum Material {
     Fire,
     Cloud,
     Steam,
+    Blackhole,
 };
