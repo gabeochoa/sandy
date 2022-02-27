@@ -365,7 +365,7 @@ inline void draw(unsigned char* pic) {
         pic[i * 4] = (color & 0xFF000000) >> 24;
         pic[i * 4 + 1] = (color & 0x00FF0000) >> 16;
         pic[i * 4 + 2] = (color & 0x0000FF00) >> 8;
-        pic[i * 4 + 3] = 255;
+        pic[i * 4 + 3] = (color & 0x000000FF);
     }
 }
 

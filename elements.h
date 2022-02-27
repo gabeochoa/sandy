@@ -15,6 +15,7 @@ struct Element {
     float friction;  // used for falling
     float lifetime;  // tracks lifetime
     int heading;     // used for things that spread
+    bool onfire;     // is the current element "burning"
 
     Element() {
         heading = 0;
@@ -22,12 +23,17 @@ struct Element {
         updated = false;
         density = 0;
         friction = 0;
+        onfire = false;
     }
     virtual ~Element() {}
     virtual int color() = 0;
     virtual void update(int x, int y, float dt) = 0;
     bool fall(int x, int y, float);
     virtual Material material() const = 0;
+
+    //
+    virtual bool flammable() const { return false; }
+    void update_fire(int x, int y, float dt);
 };
 
 struct Solid : public Element {
@@ -66,6 +72,10 @@ struct Wood : public StillSolid {
     Wood() : StillSolid() { friction = 1.0f; }
     int color() override { return rgb(55, 25, 0); }
     Material material() const override { return Material::Wood; }
+    bool flammable() const override { return true; }
+    virtual void update(int x, int y, float dt) override {
+        this->update_fire(x, y, dt);
+    }
 };
 
 struct Sand : public FallingSolid {
@@ -93,12 +103,13 @@ struct Fire : public Solid {
 struct Smoke : public Gas {
     Smoke() : Gas() { this->friction = 1; }
     int color() override {
+        int alpha = std::floor((this->lifetime / LIFETIME) * 128);
         if (rand() % 100 < 33) {
-            return rgb(20, 20, 20, 128);
+            return rgb(20, 20, 20, alpha);
         } else if (rand() % 100 < 66) {
-            return rgb(40, 40, 40, 128);
+            return rgb(40, 40, 40, alpha);
         } else {
-            return rgb(60, 60, 60, 128);
+            return rgb(60, 60, 60, alpha);
         }
     }
     Material material() const override { return Material::Smoke; }

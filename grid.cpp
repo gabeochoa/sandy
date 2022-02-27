@@ -99,6 +99,11 @@ bool Grid::empty(int x, int y) const {
     return this->matching<struct Empty>(x, y);
 }
 
+bool Grid::flammable(int x, int y) const {
+    if (!valid(x, y)) return false;
+    return this->at(x, y)->flammable();
+};
+
 bool Grid::swap(int x, int y, int a, int b) {
     if (!valid(x, y)) return false;
     if (!valid(a, b)) return false;

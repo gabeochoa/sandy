@@ -27,6 +27,34 @@ bool Element::fall(int x, int y, float) {
     }
     return true;
 }
+void Element::update_fire(int x, int y, float dt) {
+    if (!this->onfire) {
+        return;
+    }
+
+    auto grid = Grid::get();
+    this->lifetime -= dt;
+
+    // TODO replace smoke when water is on fire
+    for (int i = 0; i < 8; i++) {
+        if (grid->place_if_empty(x + dx[i], y + dy[i], Material::Smoke)) {
+            break;
+        }
+    }
+
+    // only burn if not our first update
+    if (this->lifetime > 0.9 * LIFETIME) {
+        return;
+    }
+
+    for (int i = 0; i < 8; i++) {
+        if (grid->flammable(x + dx[i], y + dy[i])) {
+            if (rand() % 100 > 90) {
+                grid->place(x + dx[i], y + dy[i], Material::Fire);
+            }
+        }
+    }
+}
 
 void Liquid::update(int x, int y, float dt) {
     bool fell = this->fall(x, y, dt);
@@ -90,19 +118,19 @@ void Fire::update(int x, int y, float dt) {
     this->lifetime -= dt;
     // TODO should there only be smoke when something is burning
     for (int i = 0; i < 8; i++) {
-        if ((rand() % 100) > 95) continue;
+        if ((rand() % 100) > 99) continue;
         if (grid->place_if_empty(x + dx[i], y + dy[i], Material::Smoke)) {
             break;
         }
     }
 
-    // for (int i = 0; i < 8; i++) {
-    // if (grid.is_flammable(x + dx[i], y + dy[i])) {
-    // if (Math.random() > 0.9) {
-    // grid.at(x + dx[i], y + dy[i]).onfire = true;
-    // }
-    // }
-    // }
+    for (int i = 0; i < 8; i++) {
+        if (grid->flammable(x + dx[i], y + dy[i])) {
+            if (rand() % 100 > 0.9) {
+                grid->at(x + dx[i], y + dy[i])->onfire = true;
+            }
+        }
+    }
 }
 
 void Cloud::update(int x, int y, float) {
@@ -117,11 +145,8 @@ void Cloud::update(int x, int y, float) {
            grid->matching<struct Cloud>(x, waterPlacementYIndex)) {
         waterPlacementYIndex++;
     }
-    if (grid->matching<struct Empty>(x, waterPlacementYIndex)) {
+    if (grid->matching<struct Empty>(x, waterPlacementYIndex) ||
+        grid->matching<struct Smoke>(x, waterPlacementYIndex)) {
         grid->place(x, waterPlacementYIndex, Water);
     }
-    // if (grid->matching<struct Empty>(x, waterPlacementYIndex) ||
-    // grid->matching<struct Smoke>(x, waterPlacementYIndex)) {
-    // grid->place(x, waterPlacementYIndex, Water);
-    // }
 }

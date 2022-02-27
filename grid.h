@@ -25,6 +25,8 @@ struct Grid {
     int colorat(int i) const;
     void update(int x, int y, float dt) const;
     bool lessdense(int x, int y, float density) const;
+    bool flammable(int x, int y) const;
+
     std::shared_ptr<Element> materialToElement(Material);
 
     template <typename T>
